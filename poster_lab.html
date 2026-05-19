@@ -1,0 +1,846 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyric Poster Pro</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* 极致平滑动画与滚动条样式 */
+    .custom-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 20px;
+      border: 2px solid #10b981;
+    }
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spin-slow 30s linear infinite;
+    }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in {
+      animation: fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    * {
+      font-family: 'Montserrat', "PingFang SC", "PingFang TC", sans-serif;
+    }
+  </style>
+</head>
+<body class="h-screen w-full bg-[#2563eb] flex items-center justify-center p-0 md:p-4 font-bold overflow-hidden select-none">
+
+  <!-- 矢量背景干扰线 -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none">
+    <div class="absolute inset-0 opacity-[0.06]" style="background-image: linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px); background-size: 40px 40px;"></div>
+    <div class="absolute top-[5%] left-[5%] w-64 h-64 border-[1px] border-white/10 rounded-full"></div>
+    <div class="absolute bottom-[5%] right-[5%] w-96 h-96 border-[1px] border-white/10 rotate-12"></div>
+    <div class="absolute top-[20%] left-0 w-full h-[150px] border-y border-white/5 skew-y-3"></div>
+    <div class="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
+  </div>
+
+  <!-- 主容器 (新布鲁特主义风格外壳) -->
+  <div id="app-shell" class="w-full h-full max-w-6xl bg-[#10b981] md:rounded-[3rem] border-4 border-black relative overflow-hidden flex flex-col shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] z-10">
+    
+    <!-- 顶部导航栏 -->
+    <header class="px-5 py-4 sm:py-6 flex justify-between items-center z-30 relative bg-[#2563eb] border-b-4 border-black shrink-0">
+      <button id="btn-back" class="p-2.5 bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 active:shadow-none hidden transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div id="header-placeholder" class="p-2.5 border-2 border-white/20 rounded-xl">
+        <svg class="text-white" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.886L5 9l4.088 1.114L11 16l1.912-5.886L17 9l-4.088-1.114z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>
+      </div>
+      <h1 class="text-xs sm:text-base font-black tracking-[0.5em] text-white uppercase truncate px-4 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">POSTER LAB</h1>
+      <button id="btn-reset" class="p-2.5 bg-white border-2 border-black rounded-xl text-black hover:bg-red-500 hover:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hidden transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <div id="header-disc" class="text-white animate-spin-slow">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 12a0 0 0 0 0 0 0"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+    </header>
+
+    <!-- 动态视口内容区域 -->
+    <div class="flex-1 overflow-hidden z-20 relative flex flex-col">
+      
+      <!-- 错误提示组件 -->
+      <div id="error-banner" class="mx-4 mt-2 p-3 bg-white border-4 border-black text-red-600 rounded-xl text-xs animate-pulse hidden"></div>
+
+      <!-- 视图容器：1. 初始搜索页 -->
+      <div id="view-landing" class="h-full flex flex-col overflow-hidden animate-in">
+        <div class="flex-1 flex flex-col overflow-y-auto custom-scroll px-6 py-8 sm:py-10">
+          <div class="w-full max-w-4xl mx-auto flex flex-col items-center">
+            
+            <!-- 几何大标题 -->
+            <div class="text-center space-y-4 mb-10">
+              <h2 class="text-[44px] sm:text-[96px] font-black text-white leading-[0.8] tracking-tighter drop-shadow-[8px_8px_0px_rgba(0,0,0,0.15)] uppercase select-none">
+                VISUALISE<br>THE RHYTHM.
+              </h2>
+              <div class="flex justify-center gap-4">
+                <div class="h-3 w-16 bg-black shadow-lg"></div>
+                <div class="h-3 w-4 bg-white shadow-lg"></div>
+              </div>
+            </div>
+
+            <!-- 新布鲁特主义步骤引导卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full mb-10">
+              <div class="bg-white border-4 border-black p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div class="mb-3 text-[#2563eb]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <div class="font-black text-sm uppercase mb-1 text-black">1. Explore</div>
+                <div class="text-[10px] text-black/50 font-black leading-tight uppercase">Search tracks globally from Apple Music.</div>
+              </div>
+              <div class="bg-[#2563eb] border-4 border-black p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-white">
+                <div class="mb-3 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                </div>
+                <div class="font-black text-sm uppercase mb-1">2. Sculpt</div>
+                <div class="text-[10px] text-white/60 font-black leading-tight uppercase">Refine your lyrics and layout structure.</div>
+              </div>
+              <div class="bg-white border-4 border-black p-5 shadow-[66px_rgba(0,0,0,1)] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                <div class="mb-3 text-[#10b981]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 10h9L11 22l2-10H4Z"/></svg>
+                </div>
+                <div class="font-black text-sm uppercase mb-1 text-black">3. Create</div>
+                <div class="text-[10px] text-black/50 font-black leading-tight uppercase">Extract palette for artistic mesh art.</div>
+              </div>
+            </div>
+
+            <!-- 交互搜索栏 -->
+            <div class="w-full max-w-xl relative group mb-8">
+              <div class="absolute inset-0 bg-black translate-x-1.5 translate-y-1.5 rounded-[2.5rem]"></div>
+              <div class="relative flex">
+                <input id="input-search" type="text" class="w-full pl-14 pr-16 py-6 bg-white border-4 border-black rounded-[2.5rem] outline-none text-black text-lg md:text-2xl font-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]" placeholder="FIND A MASTERPIECE...">
+                <div class="absolute left-6 top-1/2 -translate-y-1/2 text-black">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <button id="btn-search" class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#2563eb] text-white p-4 rounded-full border-2 border-black hover:bg-black active:scale-95 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 搜索结果骨架容器 -->
+            <div id="container-results" class="w-full space-y-4 pb-12 hidden">
+              <div class="flex items-center justify-between border-b-4 border-black pb-2 px-2">
+                <span class="text-[10px] font-black text-white tracking-[0.4em]">LIBRARY RESULTS</span>
+                <button id="btn-goto-manual" class="bg-black text-white px-4 py-1.5 border-2 border-white rounded-xl text-[9px] hover:bg-white hover:text-black transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)]">MANUAL</button>
+              </div>
+              <div id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 动态歌曲卡片插入点 -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- 视图容器：2. 强制手动编辑页 -->
+      <div id="view-manual" class="h-full flex flex-col p-6 space-y-6 animate-in hidden">
+        <div class="text-center shrink-0">
+          <div class="mx-auto text-white mb-2">
+            <svg class="mx-auto" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </div>
+          <h3 class="text-2xl font-black text-white uppercase tracking-widest">Manual Entry</h3>
+        </div>
+        <textarea id="textarea-lyrics" class="flex-1 p-8 bg-white border-4 border-black rounded-[3rem] outline-none text-black font-black text-lg md:text-xl shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] resize-none" placeholder="PASTE LYRICS HERE..."></textarea>
+        <button id="btn-manual-submit" class="py-6 bg-black text-white border-4 border-white rounded-[4rem] text-xl font-black shadow-2xl active:translate-y-2 transition-all shrink-0 uppercase">PROCEED TO EDIT</button>
+      </div>
+
+      <!-- 视图容器：3. 歌词高密度选择页 -->
+      <div id="view-editing" class="h-full flex flex-col p-4 sm:p-6 space-y-6 animate-in hidden overflow-hidden">
+        <div class="bg-white border-4 border-black p-5 rounded-2xl flex items-center gap-5 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] shrink-0">
+          <img id="edit-album-cover" src="" class="w-14 h-14 rounded-xl border-4 border-black shadow-lg">
+          <div class="min-w-0 flex-1">
+            <div id="edit-track-name" class="text-base md:text-2xl font-black text-black uppercase leading-tight truncate">TRACK NAME</div>
+            <div id="edit-artist-name" class="text-[10px] text-black/40 uppercase tracking-widest font-black">ARTIST</div>
+          </div>
+          <button id="btn-edit-manual" class="p-3 bg-neutral-100 rounded-xl text-black border-2 border-black hover:bg-black hover:text-white transition-all active:translate-y-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+        </div>
+
+        <div id="lyrics-lines-list" class="flex-1 overflow-y-auto pr-1 custom-scroll space-y-2">
+          <!-- 动态歌词条目插入点 -->
+        </div>
+
+        <button id="btn-confirm-lyrics" disabled class="py-6 bg-black text-white border-4 border-white rounded-[3rem] text-xl font-black shadow-2xl active:translate-y-2 transition-all disabled:opacity-20 shrink-0 uppercase">CONFIRM (0/4)</button>
+      </div>
+
+      <!-- 视图容器：4. 歌词布局流分折 -->
+      <div id="view-refinement" class="h-full flex flex-col p-6 space-y-10 animate-in hidden overflow-hidden">
+        <div class="text-center shrink-0">
+          <h3 class="text-2xl sm:text-4xl font-black text-white uppercase tracking-[0.3em]">REFINEMENT</h3>
+        </div>
+        <div id="refinement-list" class="flex-1 space-y-4 overflow-y-auto pr-1 custom-scroll">
+          <!-- 动态分段折叠块 -->
+        </div>
+        <button id="btn-go-palette" class="py-8 bg-black text-white border-4 border-white rounded-[3rem] text-lg font-black shadow-xl transition-all shrink-0 uppercase">STYLE PALETTE</button>
+      </div>
+
+      <!-- 视图容器：5. 艺术渐变调色板 -->
+      <div id="view-palette" class="h-full flex flex-col p-6 items-center justify-center animate-in hidden space-y-12 overflow-y-auto">
+        <div class="text-center">
+          <div class="mx-auto text-white mb-2">
+            <svg class="mx-auto" xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.63-.77 1.63-1.7 0-.44-.17-.86-.48-1.17-.3-.3-.48-.72-.48-1.16 0-.93.77-1.64 1.7-1.64h1.99c4.21 0 7.64-3.43 7.64-7.64C22 5.56 17.5 2 12 2z"/></svg>
+          </div>
+          <h3 class="text-4xl font-black text-white uppercase tracking-[0.4em]">Palette</h3>
+        </div>
+        
+        <div class="p-6 bg-white border-4 border-black rounded-[5rem] -rotate-3 shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] transition-transform hover:rotate-0">
+          <img id="palette-album-cover" src="" class="w-56 h-56 md:w-72 md:h-72 rounded-[4rem] border-2 border-black/5">
+        </div>
+
+        <div id="palette-colors-grid" class="grid grid-cols-3 sm:grid-cols-6 gap-8">
+          <!-- 色值圆盘锚点 -->
+        </div>
+
+        <button id="btn-generate" disabled class="w-full max-w-lg py-8 bg-black text-white border-4 border-white rounded-[4rem] text-2xl font-black shadow-2xl disabled:opacity-20 uppercase mt-4">GENERATE VISION</button>
+      </div>
+
+      <!-- 视图容器：6. 预览与终极圆形下载 -->
+      <div id="view-preview" class="h-full flex flex-col items-center justify-center p-6 space-y-16 animate-in hidden shrink-0">
+        <div class="relative w-full max-w-[500px] aspect-square shadow-[50px_50px_0px_0px_rgba(0,0,0,0.2)] border-8 border-black rounded-sm overflow-hidden bg-white shrink-0">
+          <canvas id="poster-canvas" width="800" height="800" class="w-full h-full object-contain"></canvas>
+        </div>
+        <button id="btn-download" class="p-10 md:p-14 bg-[#2563eb] text-white rounded-full border-4 border-black hover:bg-black transition-all shadow-[12px_12px_0px_0px_rgba(0,0,0,0.2)] active:scale-95 scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+      </div>
+
+      <!-- 统一神经网络加载层 -->
+      <div id="neural-overlay" class="h-full flex flex-col items-center justify-center space-y-12 hidden">
+        <div class="relative flex items-center justify-center scale-[2]">
+          <div class="w-24 h-24 border-[10px] border-white border-t-black rounded-full animate-spin"></div>
+          <div class="absolute text-white animate-spin-slow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+        </div>
+        <p id="neural-text" class="text-xl font-black text-white uppercase tracking-[1.5em] animate-pulse text-center">Syncing</p>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="fixed bottom-4 text-white/30 text-[10px] font-black uppercase tracking-[1.2em] pointer-events-none hidden md:block">Power by HOU & Gemini</p>
+
+  <!-- 网页状态机主逻辑 -->
+  <script>
+    // 简繁转换辅助
+    const s2tDict = { '歌': '歌', '词': '詞', '乐': '樂', '爱': '愛', '声': '聲', '体': '體', '国': '國', '艺': '藝', '术': '術', '发': '發', '问': '問', '当': '當', '对': '對', '给': '給', '单': '單', '选': '選', '颜': '顏', '色': '色', '换': '換', '行': '行', '间': '間', '距': '距', '处': '處', '理': '理', '设': '設', '置': '置' };
+    const convertToT = (str) => str.split('').map(char => s2tDict[char] || char).join('');
+
+    // 全局状态机
+    const state = {
+      query: '',
+      songs: [],
+      selectedSong: null,
+      lyricsLines: [],
+      manualLyrics: '',
+      selectedLines: [],
+      lineBreakConfigs: {}, // { index: boolean }
+      extractedColors: [],
+      gradientColors: [],
+      status: 'idle', // idle, searching, fetching, editing, manual, processing_lines, picking_colors, previewing, loading-fetching, loading-colors, loading-searching
+      error: null
+    };
+
+    // DOM 元素引用
+    const dom = {
+      appShell: document.getElementById('app-shell'),
+      btnBack: document.getElementById('btn-back'),
+      headerPlaceholder: document.getElementById('header-placeholder'),
+      btnReset: document.getElementById('btn-reset'),
+      headerDisc: document.getElementById('header-disc'),
+      errorBanner: document.getElementById('error-banner'),
+      
+      viewLanding: document.getElementById('view-landing'),
+      viewManual: document.getElementById('view-manual'),
+      viewEditing: document.getElementById('view-editing'),
+      viewRefinement: document.getElementById('view-refinement'),
+      viewPalette: document.getElementById('view-palette'),
+      viewPreview: document.getElementById('view-preview'),
+      neuralOverlay: document.getElementById('neural-overlay'),
+      neuralText: document.getElementById('neural-text'),
+
+      inputSearch: document.getElementById('input-search'),
+      btnSearch: document.getElementById('btn-search'),
+      containerResults: document.getElementById('container-results'),
+      resultsGrid: document.getElementById('results-grid'),
+      btnGotoManual: document.getElementById('btn-goto-manual'),
+
+      textareaLyrics: document.getElementById('textarea-lyrics'),
+      btnManualSubmit: document.getElementById('btn-manual-submit'),
+
+      editAlbumCover: document.getElementById('edit-album-cover'),
+      editTrackName: document.getElementById('edit-track-name'),
+      editArtistName: document.getElementById('edit-artist-name'),
+      btnEditManual: document.getElementById('btn-edit-manual'),
+      lyricsLinesList: document.getElementById('lyrics-lines-list'),
+      btnConfirmLyrics: document.getElementById('btn-confirm-lyrics'),
+
+      refinementList: document.getElementById('refinement-list'),
+      btnGoPalette: document.getElementById('btn-go-palette'),
+
+      paletteAlbumCover: document.getElementById('palette-album-cover'),
+      paletteColorsGrid: document.getElementById('palette-colors-grid'),
+      btnGenerate: document.getElementById('btn-generate'),
+
+      posterCanvas: document.getElementById('poster-canvas'),
+      btnDownload: document.getElementById('btn-download')
+    };
+
+    // 路由跳转渲染器
+    function updateRoute() {
+      // 1. 隐藏所有视图
+      dom.viewLanding.classList.add('hidden');
+      dom.viewManual.classList.add('hidden');
+      dom.viewEditing.classList.add('hidden');
+      dom.viewRefinement.classList.add('hidden');
+      dom.viewPalette.classList.add('hidden');
+      dom.viewPreview.classList.add('hidden');
+      dom.neuralOverlay.classList.add('hidden');
+
+      // 2. 隐藏/显示错误通道
+      if (state.error) {
+        dom.errorBanner.textContent = state.error;
+        dom.errorBanner.classList.remove('hidden');
+      } else {
+        dom.errorBanner.classList.add('hidden');
+      }
+
+      // 3. 头部按键处理
+      if (state.selectedSong) {
+        dom.btnBack.classList.remove('hidden');
+        dom.btnReset.classList.remove('hidden');
+        dom.headerPlaceholder.classList.add('hidden');
+        dom.headerDisc.classList.add('hidden');
+      } else {
+        dom.btnBack.classList.add('hidden');
+        dom.btnReset.classList.add('hidden');
+        dom.headerPlaceholder.classList.remove('hidden');
+        dom.headerDisc.classList.remove('hidden');
+      }
+
+      // 4. 解析加载覆盖状态
+      if (['searching', 'fetching', 'fetching_colors'].includes(state.status)) {
+        dom.neuralOverlay.classList.remove('hidden');
+        dom.neuralText.textContent = state.status === 'searching' ? 'Searching' : 'Syncing';
+        return;
+      }
+
+      // 5. 状态对应视图解析
+      switch (state.status) {
+        case 'idle':
+          dom.viewLanding.classList.remove('hidden');
+          renderSearchResults();
+          break;
+        case 'manual':
+          dom.viewManual.classList.remove('hidden');
+          dom.textareaLyrics.value = state.manualLyrics;
+          break;
+        case 'editing':
+          dom.viewEditing.classList.remove('hidden');
+          renderLyricsEditing();
+          break;
+        case 'processing_lines':
+          dom.viewRefinement.classList.remove('hidden');
+          renderRefinementList();
+          break;
+        case 'picking_colors':
+          dom.viewPalette.classList.remove('hidden');
+          renderPaletteView();
+          break;
+        case 'previewing':
+          dom.viewPreview.classList.remove('hidden');
+          renderPoster();
+          break;
+      }
+    }
+
+    // 回退路径处理器
+    dom.btnBack.addEventListener('click', () => {
+      state.error = null;
+      if (state.status === 'previewing') {
+        state.status = 'picking_colors';
+      } else if (state.status === 'picking_colors') {
+        const hasSpace = state.selectedLines.some(l => l.includes(' '));
+        state.status = hasSpace ? 'processing_lines' : 'editing';
+      } else if (state.status === 'processing_lines') {
+        state.status = 'editing';
+      } else if (state.status === 'editing') {
+        state.status = state.lyricsLines.length > 0 ? 'idle' : 'manual';
+      } else if (state.status === 'manual') {
+        state.status = 'idle';
+      }
+      updateRoute();
+    });
+
+    // 物理重置处理器
+    dom.btnReset.addEventListener('click', () => {
+      state.selectedSong = null;
+      state.lyricsLines = [];
+      state.selectedLines = [];
+      state.lineBreakConfigs = {};
+      state.gradientColors = [];
+      state.extractedColors = [];
+      state.status = 'idle';
+      state.error = null;
+      updateRoute();
+    });
+
+    // --- 1. 搜索核心模块 ---
+    async function executeSearch() {
+      const q = dom.inputSearch.value.trim();
+      if (!q) return;
+      state.query = q;
+      state.status = 'searching';
+      state.error = null;
+      updateRoute();
+
+      try {
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=21`);
+        const data = await res.json();
+        state.songs = data.results || [];
+        if (state.songs.length === 0) state.error = "未能找到匹配歌曲";
+      } catch (err) {
+        state.error = "网络异常，请稍后重试";
+      } finally {
+        state.status = 'idle';
+        updateRoute();
+      }
+    }
+
+    dom.btnSearch.addEventListener('click', executeSearch);
+    dom.inputSearch.addEventListener('keydown', (e) => e.key === 'Enter' && executeSearch());
+    dom.btnGotoManual.addEventListener('click', () => {
+      state.status = 'manual';
+      updateRoute();
+    });
+
+    function renderSearchResults() {
+      if (state.songs.length > 0) {
+        dom.containerResults.classList.remove('hidden');
+        dom.resultsGrid.innerHTML = '';
+        state.songs.forEach(song => {
+          const card = document.createElement('div');
+          card.className = "bg-white border-4 border-black p-3 rounded-2xl flex items-center gap-4 hover:bg-[#2563eb] hover:text-white cursor-pointer shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 h-20 transition-all group overflow-hidden shrink-0 text-black";
+          card.innerHTML = `
+            <img src="${song.artworkUrl100}" class="w-10 h-10 rounded-lg border-2 border-black/5 shrink-0 group-hover:rotate-6 transition-transform">
+            <div class="min-w-0 flex-1">
+              <div class="text-[10px] sm:text-[11px] font-black truncate uppercase leading-none mb-1">${song.trackName}</div>
+              <div class="text-[8px] opacity-40 truncate font-black">${song.artistName}</div>
+            </div>
+          `;
+          card.addEventListener('click', () => fetchSongLyrics(song));
+          dom.resultsGrid.appendChild(card);
+        });
+      } else {
+        dom.containerResults.classList.add('hidden');
+      }
+    }
+
+    // --- 2. 歌词获取模块 (具有 Failback 强制转手动机制) ---
+    async function fetchSongLyrics(song) {
+      state.selectedSong = song;
+      state.status = 'fetching';
+      state.error = null;
+      state.selectedLines = [];
+      state.lineBreakConfigs = {};
+      updateRoute();
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6秒熔断
+
+        const res = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(song.artistName)}&track_name=${encodeURIComponent(song.trackName)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          state.status = 'manual';
+          updateRoute();
+          return;
+        }
+
+        const data = await res.json();
+        if (data && (data.plainLyrics || data.syncedLyrics)) {
+          const raw = data.plainLyrics || data.syncedLyrics.replace(/\[\d+:\d+\.\d+\]/g, '');
+          const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          if (lines.length > 0) {
+            state.lyricsLines = lines;
+            state.status = 'editing';
+            updateRoute();
+            return;
+          }
+        }
+        state.status = 'manual';
+      } catch (err) {
+        state.status = 'manual'; // 出错100%兜底跳转手动
+      } finally {
+        updateRoute();
+      }
+    }
+
+    // --- 3. 手动数据提交模块 ---
+    dom.btnManualSubmit.addEventListener('click', () => {
+      const txt = dom.textareaLyrics.value.trim();
+      if (!txt) return;
+      state.manualLyrics = txt;
+      const lines = txt.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length > 0) {
+        state.lyricsLines = lines;
+        state.status = 'editing';
+        updateRoute();
+      }
+    });
+
+    // --- 4. 歌词高密度多选控制器 ---
+    function renderLyricsEditing() {
+      dom.editAlbumCover.src = state.selectedSong.artworkUrl100;
+      dom.editTrackName.textContent = state.selectedSong.trackName;
+      dom.editArtistName.textContent = state.selectedSong.artistName;
+
+      dom.lyricsLinesList.innerHTML = '';
+      state.lyricsLines.forEach(line => {
+        const isSelected = state.selectedLines.includes(line);
+        const item = document.createElement('button');
+        item.className = `w-full text-left p-4 border-4 rounded-xl text-sm md:text-lg leading-relaxed transition-all shadow-sm ${
+          isSelected 
+          ? 'bg-[#2563eb] text-white border-black scale-[0.98]' 
+          : 'bg-white text-black border-transparent hover:border-black'
+        }`;
+        
+        let innerHTML = '';
+        if (isSelected) {
+          innerHTML += `<svg class="inline mr-2" style="display:inline-block; vertical-align:middle;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        }
+        innerHTML += `<span>${line}</span>`;
+        item.innerHTML = innerHTML;
+
+        item.addEventListener('click', () => {
+          if (isSelected) {
+            state.selectedLines = state.selectedLines.filter(l => l !== line);
+          } else {
+            if (state.selectedLines.length < 4) {
+              state.selectedLines.push(line);
+            }
+          }
+          renderLyricsEditing();
+        });
+        dom.lyricsLinesList.appendChild(item);
+      });
+
+      dom.btnConfirmLyrics.disabled = state.selectedLines.length === 0;
+      dom.btnConfirmLyrics.textContent = `Confirm (${state.selectedLines.length}/4)`;
+    }
+
+    dom.btnConfirmLyrics.addEventListener('click', () => {
+      const hasSpace = state.selectedLines.some(l => l.includes(' '));
+      if (hasSpace) {
+        state.status = 'processing_lines';
+      } else {
+        extractArtworkColors();
+      }
+      updateRoute();
+    });
+
+    dom.btnEditManual.addEventListener('click', () => {
+      state.status = 'manual';
+      updateRoute();
+    });
+
+    // --- 5. 布局格式分断断点控制器 ---
+    function renderRefinementList() {
+      dom.refinementList.innerHTML = '';
+      state.selectedLines.forEach((line, idx) => {
+        const row = document.createElement('div');
+        row.className = "bg-white border-4 border-black p-6 rounded-2xl flex items-center justify-between gap-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-black";
+        
+        const textToDisplay = state.lineBreakConfigs[idx] && line.includes(' ') 
+          ? line.replace(' ', ' ↵ ') 
+          : line;
+
+        row.innerHTML = `
+          <p class="flex-1 text-black text-sm sm:text-lg font-black truncate">${textToDisplay}</p>
+        `;
+
+        if (line.includes(' ')) {
+          const splitBtn = document.createElement('button');
+          const isSplit = state.lineBreakConfigs[idx];
+          splitBtn.className = `px-6 py-2.5 border-4 border-black rounded-xl font-black text-[10px] transition-all ${
+            isSplit ? 'bg-[#10b981] text-white shadow-none' : 'bg-neutral-100 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+          }`;
+          splitBtn.textContent = isSplit ? 'SPLIT' : 'AUTO';
+          splitBtn.addEventListener('click', () => {
+            state.lineBreakConfigs[idx] = !state.lineBreakConfigs[idx];
+            renderRefinementList();
+          });
+          row.appendChild(splitBtn);
+        }
+
+        dom.refinementList.appendChild(row);
+      });
+    }
+
+    dom.btnGoPalette.addEventListener('click', () => {
+      extractArtworkColors();
+    });
+
+    // --- 6. 色彩感知提取模块 ---
+    function extractArtworkColors() {
+      state.status = 'fetching_colors';
+      updateRoute();
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = state.selectedSong.artworkUrl100.replace('100x100bb.jpg', '600x600bb.jpg');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 100;
+        canvas.height = 100;
+        ctx.drawImage(img, 0, 0, 100, 100);
+        const data = ctx.getImageData(0, 0, 100, 100).data;
+        
+        // 分区特征点取样
+        const samples = [
+          { x: 15, y: 15 }, { x: 50, y: 15 }, { x: 85, y: 15 },
+          { x: 15, y: 85 }, { x: 50, y: 85 }, { x: 85, y: 85 }
+        ];
+        const rawColors = samples.map(s => {
+          const idx = (s.y * 100 + s.x) * 4;
+          return `rgb(${data[idx]}, ${data[idx + 1]}, ${data[idx + 2]})`;
+        });
+        state.extractedColors = [...new Set(rawColors)];
+        state.status = 'picking_colors';
+        updateRoute();
+      };
+      img.onerror = () => {
+        state.status = 'editing';
+        updateRoute();
+      };
+    }
+
+    // --- 7. 色彩选择渲染模块 ---
+    function renderPaletteView() {
+      dom.paletteAlbumCover.src = state.selectedSong.artworkUrl100;
+      dom.paletteColorsGrid.innerHTML = '';
+
+      state.extractedColors.forEach(color => {
+        const idx = state.gradientColors.indexOf(color);
+        const active = idx !== -1;
+        
+        const disc = document.createElement('button');
+        disc.style.backgroundColor = color;
+        disc.className = `w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 border-black transition-all relative ${
+          active ? 'scale-125 ring-8 ring-white/30' : 'hover:scale-110 opacity-80'
+        }`;
+
+        if (active) {
+          disc.innerHTML = `<span class="absolute inset-0 flex items-center justify-center text-white text-base font-black drop-shadow-md">${idx + 1}</span>`;
+        }
+
+        disc.addEventListener('click', () => {
+          if (active) {
+            state.gradientColors = state.gradientColors.filter(c => c !== color);
+          } else {
+            if (state.gradientColors.length < 2) {
+              state.gradientColors.push(color);
+            } else {
+              state.gradientColors = [state.gradientColors[1], color];
+            }
+          }
+          renderPaletteView();
+        });
+
+        dom.paletteColorsGrid.appendChild(disc);
+      });
+
+      dom.btnGenerate.disabled = state.gradientColors.length < 2;
+    }
+
+    dom.btnGenerate.addEventListener('click', () => {
+      state.status = 'previewing';
+      updateRoute();
+    });
+
+    // --- 8. 海报排版引擎 ---
+    function parseTitleText(title) {
+      const text = title.trim();
+      const bracketRegex = /[(\[].*?[)\]]/g;
+      const matches = [...text.matchAll(bracketRegex)];
+      if (matches.length === 0) return [text];
+      const startsWithBracket = text[0] === '(' || text[0] === '[';
+      if (startsWithBracket) {
+        if (matches.length > 1) {
+          const secondStart = matches[1].index;
+          return [text.substring(0, secondStart).trim(), text.substring(secondStart).trim()];
+        }
+        return [text];
+      } else {
+        const firstIdx = text.search(/[(\[]/);
+        return [text.substring(0, firstIdx).trim(), text.substring(firstIdx).trim()];
+      }
+    }
+
+    function renderPoster() {
+      const canvas = dom.posterCanvas;
+      const ctx = canvas.getContext('2d');
+      const size = 800;
+      const padding = 75;
+      const topH = 600;
+      const bottomH = 200;
+      const maxWidth = size - (padding * 2); 
+      const maxHeight = topH - (padding * 2);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = state.selectedSong.artworkUrl100.replace('100x100bb.jpg', '1200x1200bb.jpg');
+
+      img.onload = () => {
+        // 1. 基础填充底板
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. 背景有机渐变层设计
+        ctx.fillStyle = state.gradientColors[0];
+        ctx.fillRect(0, 0, size, topH);
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, size, topH);
+        ctx.clip();
+        
+        const color2 = state.gradientColors[1] || state.gradientColors[0];
+        const color2T = color2.replace('rgb', 'rgba').replace(')', ', 0)');
+        const pts = [
+          { x: Math.random() * size, y: Math.random() * topH, r: 650 },
+          { x: Math.random() * size, y: Math.random() * topH, r: 550 },
+          { x: size / 2, y: topH / 2, r: 750 }
+        ];
+        pts.forEach(p => {
+          const rg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+          rg.addColorStop(0, color2);
+          rg.addColorStop(1, color2T);
+          ctx.globalCompositeOperation = 'overlay'; 
+          ctx.fillStyle = rg;
+          ctx.fillRect(0, 0, size, topH);
+        });
+        ctx.restore();
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 3. 智能对比度判定 (饱和度与亮度联合约束)
+        const rgb = state.gradientColors[0].match(/\d+/g).map(Number);
+        const max = Math.max(...rgb), min = Math.min(...rgb);
+        const l = (max + min) / 2 / 255;
+        const s = (max - min) / (max || 1);
+        
+        let lyricColor = "#FFFFFF";
+        if (l > 0.85 && s < 0.22) lyricColor = "#000000";
+        ctx.fillStyle = lyricColor;
+
+        // 4. 正文排版布局设计
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        
+        const displayLyrics = [];
+        state.selectedLines.forEach((line, idx) => {
+          if (state.lineBreakConfigs[idx] && line.includes(' ')) {
+            const parts = line.split(' ');
+            displayLyrics.push(parts[0]);
+            displayLyrics.push(parts.slice(1).join(' '));
+          } else {
+            displayLyrics.push(line);
+          }
+        });
+        
+        const convertedLyrics = displayLyrics.map(l => convertToT(l));
+
+        let currentFontSize = 80; // 歌词尺寸上限锁定为 80px
+        const lineSpacing = 24;
+        while (currentFontSize > 16) {
+          ctx.font = `bold ${currentFontSize}px "Montserrat", "PingFang SC", sans-serif`;
+          let isFit = true;
+          for (let l of convertedLyrics) {
+            if (ctx.measureText(l).width > maxWidth) {
+              isFit = false;
+              break;
+            }
+          }
+          const totalH = convertedLyrics.length * currentFontSize + (convertedLyrics.length - 1) * lineSpacing;
+          if (totalH > maxHeight) isFit = false;
+          if (isFit) break;
+          currentFontSize -= 2;
+        }
+
+        const calculatedH = convertedLyrics.length * currentFontSize + (convertedLyrics.length - 1) * lineSpacing;
+        let runningY = padding + (maxHeight - calculatedH) / 2;
+        
+        convertedLyrics.forEach(line => {
+          ctx.font = `bold ${currentFontSize}px "Montserrat", "PingFang SC", sans-serif`;
+          ctx.fillText(line, padding, runningY);
+          runningY += (currentFontSize + lineSpacing);
+        });
+
+        // 5. 底部等间距精密排列
+        const infoBoxH = 125;
+        const bY = topH + (bottomH - infoBoxH) / 2;
+        const rightX = size - padding;
+        
+        // 渲染封面
+        ctx.drawImage(img, padding, bY, infoBoxH, infoBoxH);
+
+        // 构造等间距数据流 (3行或4行)
+        const parsedTitle = parseTitleText(state.selectedSong.trackName);
+        const metaRows = [...parsedTitle, state.selectedSong.artistName, state.selectedSong.collectionName];
+        const N = metaRows.length;
+        const verticalGap = infoBoxH / (N - 1);
+
+        ctx.textAlign = "right";
+        metaRows.forEach((txt, index) => {
+          const anchorY = bY + (index * verticalGap);
+          
+          if (index === 0) {
+            // 第一行：主歌曲名 (Bold)
+            ctx.textBaseline = "top";
+            ctx.font = `bold ${N === 4 ? 32 : 38}px "Montserrat", "PingFang SC", sans-serif`;
+            ctx.fillStyle = "#000000";
+            ctx.fillText(txt, rightX, anchorY);
+          } else {
+            // 其余行：细体 300、统一字号 22px、统一颜色 #666666
+            ctx.textBaseline = (index === N - 1) ? "bottom" : "middle";
+            ctx.font = `300 22px "Montserrat", "PingFang SC", sans-serif`;
+            ctx.fillStyle = "#666666";
+            ctx.fillText(txt, rightX, anchorY);
+          }
+        });
+      };
+    }
+
+    // --- 9. 下载功能控制器 ---
+    dom.btnDownload.addEventListener('click', () => {
+      dom.posterCanvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `LyricPoster_${state.selectedSong.trackName.replace(/\s+/g, '_')}.png`;
+        link.click();
+      }, 'image/png');
+    });
+
+    // 初始化运行状态
+    updateRoute();
+  </script>
+</body>
+</html>
+
